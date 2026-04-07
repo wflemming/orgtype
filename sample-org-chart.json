@@ -1,0 +1,41 @@
+{
+  "name": "Alexandra Chen",
+  "role": "Chief Executive Officer",
+  "linkedinUrl": "https://linkedin.com/in/example",
+  "reports": [
+    {
+      "name": "Marcus Rivera",
+      "role": "VP of Engineering",
+      "reports": [
+        {
+          "name": "James Okafor",
+          "role": "Director of Backend Engineering",
+          "reports": [
+            { "name": "Olivia Thompson", "role": "Senior Backend Engineer", "reports": [] }
+          ]
+        },
+        {
+          "name": "Sofia Martinez",
+          "role": "Director of Frontend Engineering",
+          "reports": [
+            { "name": "Liam Nguyen", "role": "Frontend Engineer", "reports": [] }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Priya Sharma",
+      "role": "VP of Product",
+      "reports": [
+        {
+          "name": "David Kim",
+          "role": "Director of Product Design",
+          "reports": [
+            { "name": "Noah Patel", "role": "UX Designer", "reports": [] }
+          ]
+        },
+        { "name": "Emma Johansson", "role": "Senior Product Manager", "reports": [] }
+      ]
+    }
+  ]
+}

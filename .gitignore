@@ -1,0 +1,25 @@
+# Backend services
+**/build/
+**/.gradle/
+**/bin/
+*.class
+*.jar
+
+# Frontend
+client/node_modules/
+client/dist/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+pgdata/
+
+# Claude
+.claude/

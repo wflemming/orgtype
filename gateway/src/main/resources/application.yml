@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: gateway
+  cloud:
+    gateway:
+      routes:
+        - id: org-service
+          uri: ${ORG_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/org/**
+        - id: game-service
+          uri: ${GAME_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/game/**
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:5173"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders:
+              - "*"
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      base-path: /management
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always

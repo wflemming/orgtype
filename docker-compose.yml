@@ -1,0 +1,53 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: orgtype
+      POSTGRES_USER: orgtype
+      POSTGRES_PASSWORD: orgtype
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orgtype"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  org-service:
+    build: ./org-service
+    ports:
+      - "8081:8081"
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: orgtype
+      DB_USER: orgtype
+      DB_PASS: orgtype
+    depends_on:
+      db:
+        condition: service_healthy
+
+  game-service:
+    build: ./game-service
+    ports:
+      - "8082:8082"
+    environment:
+      ORG_SERVICE_URL: http://org-service:8081
+    depends_on:
+      - org-service
+
+  gateway:
+    build: ./gateway
+    ports:
+      - "8080:8080"
+    environment:
+      ORG_SERVICE_URL: http://org-service:8081
+      GAME_SERVICE_URL: http://game-service:8082
+    depends_on:
+      - org-service
+      - game-service
+
+volumes:
+  pgdata:
