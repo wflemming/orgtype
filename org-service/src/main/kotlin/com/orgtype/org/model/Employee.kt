@@ -25,5 +25,8 @@ data class Employee(
     val imageUrl: String? = null,
 
     @Column(name = "linkedin_url")
-    val linkedinUrl: String? = null
+    val linkedinUrl: String? = null,
+
+    @Column(name = "role_alias")
+    val roleAlias: String? = null
 )

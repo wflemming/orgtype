@@ -58,6 +58,17 @@ class OrgChartService(private val employeeRepository: EmployeeRepository) {
         }
     }
 
+    @Transactional
+    fun updateEmployee(id: Long, imageUrl: String?, linkedinUrl: String?, roleAlias: String?): Employee? {
+        val employee = employeeRepository.findById(id).orElse(null) ?: return null
+        val updated = employee.copy(
+            imageUrl = imageUrl ?: employee.imageUrl,
+            linkedinUrl = linkedinUrl ?: employee.linkedinUrl,
+            roleAlias = roleAlias ?: employee.roleAlias
+        )
+        return employeeRepository.save(updated)
+    }
+
     fun getOrgChartRoots(): List<Employee> {
         return employeeRepository.findByManagerIdIsNull()
     }

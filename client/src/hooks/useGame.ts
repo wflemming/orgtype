@@ -65,7 +65,18 @@ export function useGame() {
 
         const randomIdx =
           unrevealedIndices[Math.floor(Math.random() * unrevealedIndices.length)]
-        return new Set([...prev, randomIdx])
+        const next = new Set([...prev, randomIdx])
+
+        // If auto-hint just revealed the last letter, trigger timeout
+        const allRevealed = nameChars.every(
+          (ch, i) => ch === ' ' || next.has(i)
+        )
+        if (allRevealed) {
+          clearInterval(hintTimerRef.current)
+          setTimeout(() => setGameState('timeout'), 300)
+        }
+
+        return next
       })
     }, 10000)
 
@@ -128,10 +139,45 @@ export function useGame() {
     startTimeRef.current = Date.now()
   }, [currentIndex, employees.length])
 
+  const retryEmployee = useCallback(() => {
+    setRevealedLetters(new Set())
+    setTypedLetters([])
+    setGameState('playing')
+    startTimeRef.current = Date.now()
+  }, [])
+
+  const togglePause = useCallback(() => {
+    if (gameState === 'playing') {
+      clearInterval(hintTimerRef.current)
+      setGameState('paused')
+    } else if (gameState === 'paused') {
+      setGameState('playing')
+    }
+  }, [gameState])
+
+  const previousEmployee = useCallback(() => {
+    if (currentIndex <= 0) return
+    clearInterval(hintTimerRef.current)
+    setCurrentIndex((prev) => prev - 1)
+    setRevealedLetters(new Set())
+    setTypedLetters([])
+    setGameState('playing')
+    startTimeRef.current = Date.now()
+  }, [currentIndex])
+
   const restart = useCallback(() => {
     setStats({ correct: 0, total: 0, streak: 0, bestStreak: 0, totalTime: 0 })
     loadEmployees(mode)
   }, [mode, loadEmployees])
+
+  const updateCurrentEmployee = useCallback(
+    (updated: Employee) => {
+      setEmployees((prev) =>
+        prev.map((emp) => (emp.id === updated.id ? updated : emp))
+      )
+    },
+    []
+  )
 
   const changeMode = useCallback(
     (newMode: GameMode) => {
@@ -152,6 +198,10 @@ export function useGame() {
     totalEmployees: employees.length,
     handleKeyPress,
     nextEmployee,
+    previousEmployee,
+    retryEmployee,
+    togglePause,
+    updateCurrentEmployee,
     restart,
     changeMode,
   }

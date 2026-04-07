@@ -1,5 +1,6 @@
 package com.orgtype.org.controller
 
+import com.orgtype.org.dto.EmployeeUpdateDto
 import com.orgtype.org.dto.OrgChartNode
 import com.orgtype.org.model.Employee
 import com.orgtype.org.service.OrgChartService
@@ -47,6 +48,15 @@ class OrgChartController(private val orgChartService: OrgChartService) {
     @GetMapping("/employees/{id}")
     fun getEmployee(@PathVariable id: Long): ResponseEntity<Employee> {
         val employee = orgChartService.getEmployee(id)
+        return if (employee != null) ResponseEntity.ok(employee) else ResponseEntity.notFound().build()
+    }
+
+    @PatchMapping("/employees/{id}")
+    fun updateEmployee(
+        @PathVariable id: Long,
+        @RequestBody update: EmployeeUpdateDto
+    ): ResponseEntity<Employee> {
+        val employee = orgChartService.updateEmployee(id, update.imageUrl, update.linkedinUrl, update.roleAlias)
         return if (employee != null) ResponseEntity.ok(employee) else ResponseEntity.notFound().build()
     }
 }

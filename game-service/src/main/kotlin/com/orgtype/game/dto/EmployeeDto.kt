@@ -7,5 +7,6 @@ data class EmployeeDto(
     val level: Int,
     val managerId: Long?,
     val imageUrl: String?,
-    val linkedinUrl: String?
+    val linkedinUrl: String?,
+    val roleAlias: String? = null
 )

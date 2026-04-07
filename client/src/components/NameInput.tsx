@@ -6,7 +6,9 @@ interface Props {
   revealedLetters: Set<number>
   onKeyPress: (key: string) => void
   isRevealed: boolean
+  isTimeout: boolean
   onNext: () => void
+  onRetry: () => void
 }
 
 export function NameInput({
@@ -14,22 +16,29 @@ export function NameInput({
   revealedLetters,
   onKeyPress,
   isRevealed,
+  isTimeout,
   onNext,
+  onRetry,
 }: Props) {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Enter' && isRevealed) {
+      if (e.key === 'Enter' && (isRevealed || isTimeout)) {
+        isTimeout ? onRetry() : onNext()
+        return
+      }
+      if (e.key === 'Tab' && isTimeout) {
+        e.preventDefault()
         onNext()
         return
       }
-      if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
+      if (e.key.length === 1 && /[a-zA-Z]/.test(e.key) && !isRevealed && !isTimeout) {
         onKeyPress(e.key)
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onKeyPress, isRevealed, onNext])
+  }, [onKeyPress, isRevealed, isTimeout, onNext, onRetry])
 
   const chars = targetName.split('')
 
@@ -51,25 +60,31 @@ export function NameInput({
 
   return (
     <div className="flex flex-col items-center gap-8">
-      <div className="flex flex-wrap justify-center gap-3">
+      <div className="flex flex-wrap justify-center gap-8">
         {words.map((word, wi) => (
           <div key={wi} className="flex gap-1.5">
             {word.map(({ char, index }) => {
               const isShown = revealedLetters.has(index)
+              const isHinted = isShown && isTimeout
               return (
                 <motion.div
                   key={index}
                   initial={false}
                   animate={
                     isShown
-                      ? { scale: [1, 1.2, 1], backgroundColor: '#6C40E0' }
+                      ? {
+                          scale: [1, 1.2, 1],
+                          backgroundColor: isHinted ? '#F59E0B' : '#6C40E0',
+                        }
                       : {}
                   }
                   transition={{ duration: 0.3 }}
                   className={`w-10 h-12 flex items-center justify-center rounded-lg text-xl font-bold border-2 transition-colors ${
-                    isShown
-                      ? 'bg-sofi-purple text-white border-sofi-purple'
-                      : 'bg-white text-sofi-dark border-gray-200'
+                    isHinted
+                      ? 'bg-sofi-hint text-white border-sofi-hint'
+                      : isShown
+                        ? 'bg-sofi-purple text-white border-sofi-purple'
+                        : 'bg-white text-sofi-dark border-gray-200'
                   }`}
                 >
                   {isShown ? char : ''}
@@ -80,10 +95,38 @@ export function NameInput({
         ))}
       </div>
 
-      {!isRevealed && (
+      {!isRevealed && !isTimeout && (
         <p className="text-gray-400 text-sm">
           Type letters to reveal the name...
         </p>
+      )}
+
+      {isTimeout && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center gap-3"
+        >
+          <p className="text-sofi-hint font-semibold text-sm">Time's up! The hints gave it away.</p>
+          <div className="flex gap-3">
+            <button
+              onClick={onRetry}
+              className="px-5 py-2.5 bg-sofi-hint text-white rounded-xl font-semibold hover:bg-amber-600 transition-colors shadow-md"
+            >
+              Retry ↩
+            </button>
+            <button
+              onClick={onNext}
+              className="px-5 py-2.5 bg-gray-200 text-sofi-dark rounded-xl font-semibold hover:bg-gray-300 transition-colors"
+            >
+              Skip →
+            </button>
+          </div>
+          <p className="text-gray-300 text-xs">
+            <kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-gray-400 font-mono">Enter</kbd> retry
+            {' '}<kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-gray-400 font-mono">Tab</kbd> skip
+          </p>
+        </motion.div>
       )}
 
       {isRevealed && (
