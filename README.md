@@ -1,6 +1,90 @@
 # OrgType
 
-A Wordle-style typing game where players identify employees from photos in an organization chart. Built as a microservices application with Kotlin/Spring Boot, React/TypeScript, PostgreSQL, Docker, and Kubernetes.
+A Wordle-style typing game where players guess employee names from photos and org chart context. Built as a microservices application with Kotlin/Spring Boot, React/TypeScript, PostgreSQL, Docker, and Kubernetes.
+
+## How It Works
+
+Players are shown an employee's photo, role, and position in the org hierarchy. Letters of the name are partially revealed based on difficulty — the player types to fill in the rest. A correct guess earns points; wait too long and the auto-hint system gives it away.
+
+### Game Modes
+
+| Mode | Description |
+|------|-------------|
+| **Random** | Employees appear in random order |
+| **Top → Down** | Traverse the org chart from leadership down |
+| **Bottom → Up** | Start from individual contributors and work up |
+
+### Difficulty Levels
+
+| Level | Letters Pre-Filled |
+|-------|-------------------|
+| Easy | 75% |
+| Medium | 50% |
+| Hard | 25% |
+| Expert | 0% |
+
+### Scoring & Streaks
+
+- **+1 point** per correct answer
+- **+1 speed bonus** if answered in under 5 seconds
+- **+2 streak bonus** at 3 consecutive correct
+- **+3 streak bonus** at 5 consecutive correct
+- **+5 streak bonus** at 10+ consecutive correct
+
+Points fuel the **Peek system** — spend points to preview upcoming employees:
+
+| Peek | Cost |
+|------|------|
+| Small peek (next 1) | 1 point |
+| Big peek (next 3) | 3 points |
+
+### Auto-Hint & Timeout
+
+Every 10 seconds, a random unrevealed letter is automatically filled in. If all letters are revealed by hints before the player finishes typing, the round times out — it counts as "seen" but not "correct."
+
+### Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `⌘ .` | Pause / Resume |
+| `⌘ 1` | Small peek |
+| `⌘ 3` | Big peek |
+| `⌘ R` | Retry current |
+| `⌘ B` | Previous person |
+| `⌘ ⇧ N` | Next person |
+| `⌘ ⇧ R` | Restart round |
+| `⌘ K` | Command palette |
+
+## Admin Panel
+
+Accessible from the footer link. Features include:
+
+- **JSON Import** — Drag-and-drop or paste an org chart JSON file. Preview the tree structure before importing.
+- **Org Chart Management** — View, inspect, and delete imported org charts.
+- **Inline Employee Editing** — During gameplay, click a revealed card to edit the employee's image URL, LinkedIn URL, role alias, or preferred name.
+- **Flagging** — Flag employees with a reason (incorrect role, wrong manager, duplicate, left company, etc.) and an optional note.
+- **Flag Reconciliation** — Review open flags, view employees with the same role for comparison, and resolve or dismiss flags.
+- **Hide vs. Delete** — Hide removes an employee from the game but keeps them in the database. Delete fully removes them and reassigns their reports to their manager.
+
+### Org Chart JSON Format
+
+```json
+{
+  "name": "Jane Doe",
+  "role": "CEO",
+  "imageUrl": "https://example.com/photo.jpg",
+  "linkedinUrl": "https://linkedin.com/in/janedoe",
+  "reports": [
+    {
+      "name": "John Smith",
+      "role": "VP Engineering",
+      "reports": []
+    }
+  ]
+}
+```
+
+Employees without an `imageUrl` get an auto-generated avatar.
 
 ## Architecture
 
@@ -28,11 +112,13 @@ A Wordle-style typing game where players identify employees from photos in an or
          └─────────────┘
 ```
 
-- **org-service** — Owns the PostgreSQL database. Manages employees, org chart hierarchy, and data quality flags.
-- **game-service** — Stateless proxy to org-service. Wraps employee data for the game client.
+- **org-service** — Owns the PostgreSQL database. Manages employees, org chart hierarchy, flags, and data quality.
+- **game-service** — Stateless proxy to org-service. Wraps employee data for the game client (random, top-down, bottom-up ordering).
 - **gateway** — Routes `/api/org/**` to org-service, `/api/game/**` to game-service. Handles CORS.
-- **client** — React frontend. Game UI, admin panel, and session management.
+- **client** — React frontend with game UI, admin panel, command palette, and local session management.
 - **db** — PostgreSQL 16. Schema managed by Hibernate `ddl-auto: update` (no migrations).
+
+Player profiles, game sessions, and peek points are stored in the browser's localStorage — the backend is stateless with respect to game state.
 
 ## Local Development
 
@@ -40,7 +126,7 @@ A Wordle-style typing game where players identify employees from photos in an or
 
 - Docker Desktop
 - Node.js 20+
-- Make sure ports 5173, 8080, 8081, 8082, and 5432 are free
+- Ports 5173, 8080, 8081, 8082, and 5432 available
 
 > **Note**: The backend requires JDK 21 — always use Docker. Never run `gradle build` directly on the host.
 
@@ -50,12 +136,15 @@ A Wordle-style typing game where players identify employees from photos in an or
 docker compose up --build
 ```
 
-This starts PostgreSQL, org-service, game-service, and gateway. First build takes a few minutes; subsequent runs are fast.
+This starts PostgreSQL, org-service, game-service, and gateway. First build takes a few minutes; subsequent runs use cached layers.
 
 To rebuild a single service after changes:
+
 ```bash
 docker compose up --build org-service
 ```
+
+On first startup, the backend seeds the database with a sample org chart if no data exists.
 
 ### Run the frontend
 
@@ -65,7 +154,7 @@ npm install
 npm run dev
 ```
 
-The frontend runs on `http://localhost:5173` and proxies API requests to the gateway at `:8080`.
+The frontend runs at `http://localhost:5173` and proxies API requests to the gateway at `:8080`.
 
 ### Type-check the frontend
 
@@ -96,7 +185,49 @@ npm test           # one-shot
 npm run test:watch # watch mode
 ```
 
-## Kubernetes (Production-grade Deployment)
+## Observability
+
+The backend services expose Prometheus metrics and structured logs.
+
+### Metrics
+
+Each service exposes a `/management/prometheus` endpoint with JVM, HTTP, and DB metrics:
+
+- `http_server_requests_seconds_count` — request rate
+- `http_server_requests_seconds_bucket` — latency histogram (for p95/p99)
+- `jvm_memory_used_bytes` — heap usage
+- `hikaricp_connections_active` — DB connection pool (org-service)
+
+### Run Prometheus + Grafana locally
+
+```bash
+# Start the app first
+docker compose up -d
+
+# Then start the observability stack
+docker compose -f docker-compose.observability.yml up -d
+```
+
+- **Prometheus**: http://localhost:9090
+- **Grafana**: http://localhost:3000 (anonymous viewer enabled, admin/admin for editing)
+
+Grafana auto-provisions the **OrgType Overview** dashboard via provisioning config files in `observability/`. The dashboard includes:
+
+- HTTP request rate per service
+- p95 / p99 latency
+- JVM heap usage
+- 5xx error rate
+- Service up/down status
+
+### Structured logging
+
+Logs use plain text in dev (default profile) and JSON in production via the `prod` Spring profile. JSON logs include `service`, `traceId`, and `spanId` fields ready for ingestion by Datadog, Splunk, ELK, or Loki.
+
+```bash
+SPRING_PROFILES_ACTIVE=prod docker compose up
+```
+
+## Kubernetes
 
 The `k8s/` directory contains production-ready Kubernetes manifests demonstrating:
 
@@ -106,7 +237,8 @@ The `k8s/` directory contains production-ready Kubernetes manifests demonstratin
 - PersistentVolumeClaims for database storage
 - Service discovery via stable DNS names
 - Resource requests and limits
-- An Ingress for external traffic
+- Ingress for external traffic
+- Prometheus scrape annotations for automatic metric discovery
 
 ### Deploy to local Kubernetes (minikube)
 
@@ -114,7 +246,7 @@ The `k8s/` directory contains production-ready Kubernetes manifests demonstratin
 # 1. Start a local cluster
 minikube start --cpus=4 --memory=4096
 
-# 2. Build images on your Mac's Docker (faster than building inside minikube)
+# 2. Build images
 docker compose build
 
 # 3. Load images into minikube
@@ -122,10 +254,10 @@ minikube image load orgtype-org-service:latest
 minikube image load orgtype-game-service:latest
 minikube image load orgtype-gateway:latest
 
-# 4. Apply all manifests recursively
+# 4. Apply all manifests
 kubectl apply -f k8s/ -R
 
-# 5. Watch pods come up (takes ~2 minutes for Spring Boot to start)
+# 5. Watch pods come up (~2 minutes for Spring Boot)
 kubectl get pods -n orgtype -w
 ```
 
@@ -135,20 +267,14 @@ When all pods show `1/1 Running`, expose the gateway:
 minikube service gateway -n orgtype
 ```
 
-This opens a tunnel and prints a URL. Test it:
-
-```bash
-curl http://127.0.0.1:<port>/api/org/employees
-```
-
 ### Common kubectl commands
 
 ```bash
-kubectl get pods -n orgtype                       # list pods
-kubectl logs -n orgtype -l app=org-service        # tail logs by label
-kubectl describe pod <pod-name> -n orgtype        # debug a pod
-kubectl rollout restart deployment/org-service -n orgtype  # restart after rebuild
-kubectl delete -f k8s/ -R                         # tear everything down
+kubectl get pods -n orgtype                                # list pods
+kubectl logs -n orgtype -l app=org-service                 # tail logs
+kubectl describe pod <pod-name> -n orgtype                 # debug a pod
+kubectl rollout restart deployment/org-service -n orgtype   # restart after rebuild
+kubectl delete -f k8s/ -R                                  # tear everything down
 ```
 
 ### After a code change
@@ -166,52 +292,6 @@ minikube stop      # pause cluster, keep state
 minikube delete    # destroy cluster entirely
 ```
 
-## Observability
-
-The backend services expose Prometheus metrics and structured logs out of the box.
-
-### Metrics
-
-Each service exposes a `/management/prometheus` endpoint with JVM, HTTP, and DB metrics:
-
-- `http_server_requests_seconds_count` — request rate
-- `http_server_requests_seconds_bucket` — latency histogram (for p95/p99)
-- `jvm_memory_used_bytes` — heap usage
-- `hikaricp_connections_active` — DB connection pool (org-service)
-
-### Run Prometheus + Grafana locally
-
-```bash
-# Start the app first
-docker compose up -d
-
-# Then start the observability stack (uses the same Docker network)
-docker compose -f docker-compose.observability.yml up -d
-```
-
-- **Prometheus**: http://localhost:9090
-- **Grafana**: http://localhost:3000 (anonymous viewer enabled, admin/admin for editing)
-
-Grafana auto-loads the **OrgType Overview** dashboard with:
-- HTTP request rate per service
-- p95 / p99 latency
-- JVM heap usage
-- 5xx error rate
-- Service up/down status
-
-### Structured logging
-
-Logs use plain text in dev (default profile) and JSON in production via the `prod` Spring profile. JSON logs include `service`, `traceId`, and `spanId` fields ready for ingestion by Datadog, Splunk, ELK, or Loki.
-
-To enable JSON logs locally:
-```bash
-SPRING_PROFILES_ACTIVE=prod docker compose up
-```
-
-### Kubernetes integration
-
-The K8s deployments include Prometheus scrape annotations (`prometheus.io/scrape`, `prometheus.io/path`, `prometheus.io/port`), so a Prometheus operator running in the cluster will automatically discover and scrape all three services.
-
 ## CI/CD
 
 GitHub Actions runs on every push and PR to `main`:
@@ -226,11 +306,11 @@ See `.github/workflows/ci.yml`.
 
 ```
 .
-├── client/                    # React + TS frontend
-├── org-service/               # Kotlin/Spring Boot — owns the database
-├── game-service/              # Kotlin/Spring Boot — proxy to org-service
-├── gateway/                   # Spring Cloud Gateway
-├── k8s/                       # Kubernetes manifests
+├── client/                          # React + TS frontend
+├── org-service/                     # Kotlin/Spring Boot — owns the database
+├── game-service/                    # Kotlin/Spring Boot — stateless proxy
+├── gateway/                         # Spring Cloud Gateway
+├── k8s/                             # Kubernetes manifests
 │   ├── namespace.yml
 │   ├── configmap.yml
 │   ├── ingress.yml
@@ -238,7 +318,8 @@ See `.github/workflows/ci.yml`.
 │   ├── org-service/
 │   ├── game-service/
 │   └── gateway/
-├── .github/workflows/         # CI pipeline
-├── docker-compose.yml         # Local dev orchestration
-└── CLAUDE.md                  # Quick reference for AI assistants
+├── observability/                   # Prometheus + Grafana configs
+├── .github/workflows/               # CI pipeline
+├── docker-compose.yml               # Local dev orchestration
+└── docker-compose.observability.yml # Prometheus + Grafana stack
 ```
