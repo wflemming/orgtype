@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 interface Props {
   targetName: string
   revealedLetters: Set<number>
+  prefilledLetters: Set<number>
   onKeyPress: (key: string) => void
   isRevealed: boolean
   isTimeout: boolean
@@ -14,6 +15,7 @@ interface Props {
 export function NameInput({
   targetName,
   revealedLetters,
+  prefilledLetters,
   onKeyPress,
   isRevealed,
   isTimeout,
@@ -65,27 +67,37 @@ export function NameInput({
           <div key={wi} className="flex gap-1.5">
             {word.map(({ char, index }) => {
               const isShown = revealedLetters.has(index)
-              const isHinted = isShown && isTimeout
+              const isPrefilled = prefilledLetters.has(index)
+              const isHinted = isShown && isTimeout && !isPrefilled
+
+              let boxClass: string
+              let animBg: string | undefined
+
+              if (isHinted) {
+                boxClass = 'bg-sofi-hint text-white border-sofi-hint'
+                animBg = '#F59E0B'
+              } else if (isPrefilled) {
+                boxClass = 'bg-gray-100 text-gray-400 border-gray-200'
+                animBg = undefined
+              } else if (isShown) {
+                boxClass = 'bg-sofi-purple text-white border-sofi-purple'
+                animBg = '#6C40E0'
+              } else {
+                boxClass = 'bg-white text-sofi-dark border-gray-200'
+                animBg = undefined
+              }
+
               return (
                 <motion.div
                   key={index}
                   initial={false}
                   animate={
-                    isShown
-                      ? {
-                          scale: [1, 1.2, 1],
-                          backgroundColor: isHinted ? '#F59E0B' : '#6C40E0',
-                        }
+                    isShown && !isPrefilled
+                      ? { scale: [1, 1.2, 1], ...(animBg ? { backgroundColor: animBg } : {}) }
                       : {}
                   }
                   transition={{ duration: 0.3 }}
-                  className={`w-10 h-12 flex items-center justify-center rounded-lg text-xl font-bold border-2 transition-colors ${
-                    isHinted
-                      ? 'bg-sofi-hint text-white border-sofi-hint'
-                      : isShown
-                        ? 'bg-sofi-purple text-white border-sofi-purple'
-                        : 'bg-white text-sofi-dark border-gray-200'
-                  }`}
+                  className={`w-10 h-12 flex items-center justify-center rounded-lg text-xl font-bold border-2 transition-colors ${boxClass}`}
                 >
                   {isShown ? char : ''}
                 </motion.div>

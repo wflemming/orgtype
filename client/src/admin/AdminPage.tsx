@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { JsonUploader } from './JsonUploader'
 import { OrgTreePreview } from './OrgTreePreview'
+import { FlaggedEmployees } from './FlaggedEmployees'
 import {
   importOrgChart,
   getOrgChartRoots,
@@ -131,13 +132,13 @@ export function AdminPage() {
                       <img
                         src={
                           root.imageUrl ??
-                          `https://api.dicebear.com/9.x/personas/svg?seed=${root.name.toLowerCase().replace(/ /g, '')}`
+                          `https://api.dicebear.com/9.x/personas/svg?seed=${root.displayName.toLowerCase().replace(/ /g, '')}`
                         }
-                        alt={root.name}
+                        alt={root.displayName}
                         className="w-10 h-10 rounded-full bg-white"
                       />
                       <div>
-                        <p className="font-semibold text-sofi-dark">{root.name}</p>
+                        <p className="font-semibold text-sofi-dark">{root.displayName}</p>
                         <p className="text-xs text-gray-400">{root.role}</p>
                       </div>
                     </div>
@@ -158,6 +159,9 @@ export function AdminPage() {
             </div>
           )}
         </section>
+
+        {/* Flagged Employees */}
+        <FlaggedEmployees />
 
         <div className="text-center">
           <Link

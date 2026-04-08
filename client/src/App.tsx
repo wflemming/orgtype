@@ -1,8 +1,13 @@
+import { useState } from 'react'
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
 import { GameBoard } from './components/GameBoard'
+import { StartScreen } from './components/StartScreen'
 import { AdminPage } from './admin/AdminPage'
+import type { GameSession } from './types/employee'
 
 function GamePage() {
+  const [activeSession, setActiveSession] = useState<GameSession | null>(null)
+
   return (
     <div className="min-h-screen bg-sofi-bg flex flex-col items-center px-4 py-8">
       <header className="mb-10 text-center">
@@ -14,8 +19,16 @@ function GamePage() {
         </p>
       </header>
 
-      <main className="flex-1 w-full max-w-4xl">
-        <GameBoard />
+      <main className="flex-1 w-full max-w-7xl">
+        {activeSession ? (
+          <GameBoard
+            session={activeSession}
+            onExit={() => setActiveSession(null)}
+            onSessionUpdate={setActiveSession}
+          />
+        ) : (
+          <StartScreen onStart={setActiveSession} />
+        )}
       </main>
 
       <footer className="mt-12 flex flex-col items-center gap-2">
