@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: game-service
+  namespace: orgtype
+  labels:
+    app: game-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: game-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: game-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/management/prometheus"
+        prometheus.io/port: "8082"
+    spec:
+      containers:
+        - name: game-service
+          image: orgtype-game-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8082
+          env:
+            - name: ORG_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: orgtype-config
+                  key: ORG_SERVICE_URL
+          startupProbe:
+            httpGet:
+              path: /management/health
+              port: 8082
+            failureThreshold: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /management/health
+              port: 8082
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /management/health
+              port: 8082
+            periodSeconds: 15
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"

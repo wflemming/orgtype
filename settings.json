@@ -1,0 +1,7 @@
+{
+  "languages": {
+    "Kotlin": {
+      "formatter": "language_server"
+    }
+  }
+}

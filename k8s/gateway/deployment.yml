@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  namespace: orgtype
+  labels:
+    app: gateway
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: gateway
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: gateway
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/management/prometheus"
+        prometheus.io/port: "8080"
+    spec:
+      containers:
+        - name: gateway
+          image: orgtype-gateway:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: ORG_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: orgtype-config
+                  key: ORG_SERVICE_URL
+            - name: GAME_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: orgtype-config
+                  key: GAME_SERVICE_URL
+          startupProbe:
+            httpGet:
+              path: /management/health
+              port: 8080
+            failureThreshold: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /management/health
+              port: 8080
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /management/health
+              port: 8080
+            periodSeconds: 15
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "200m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"

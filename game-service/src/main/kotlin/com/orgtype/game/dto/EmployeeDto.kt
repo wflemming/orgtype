@@ -2,7 +2,9 @@ package com.orgtype.game.dto
 
 data class EmployeeDto(
     val id: Long,
-    val name: String,
+    val legalName: String,
+    val preferredName: String? = null,
+    val displayName: String,
     val role: String,
     val level: Int,
     val managerId: Long?,

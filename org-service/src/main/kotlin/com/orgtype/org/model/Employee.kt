@@ -1,5 +1,6 @@
 package com.orgtype.org.model
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import jakarta.persistence.*
 
 @Entity
@@ -9,8 +10,11 @@ data class Employee(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
 
-    @Column(nullable = false)
-    val name: String = "",
+    @Column(name = "legal_name", nullable = false)
+    val legalName: String = "",
+
+    @Column(name = "preferred_name")
+    val preferredName: String? = null,
 
     @Column(nullable = false)
     val role: String = "",
@@ -28,5 +32,12 @@ data class Employee(
     val linkedinUrl: String? = null,
 
     @Column(name = "role_alias")
-    val roleAlias: String? = null
-)
+    val roleAlias: String? = null,
+
+    @Column(nullable = false)
+    val hidden: Boolean = false
+) {
+    @get:JsonProperty("displayName")
+    val displayName: String
+        get() = preferredName ?: legalName
+}

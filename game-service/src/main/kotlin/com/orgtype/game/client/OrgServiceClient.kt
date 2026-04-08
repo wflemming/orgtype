@@ -15,7 +15,7 @@ class OrgServiceClient(
         .build()
 
     fun getEmployees(sort: String?): List<EmployeeDto> {
-        val uri = if (sort != null) "/api/org/employees?sort=$sort" else "/api/org/employees"
+        val uri = if (sort != null) "/api/org/employees/visible?sort=$sort" else "/api/org/employees/visible"
         return restClient.get()
             .uri(uri)
             .retrieve()

@@ -1,6 +1,7 @@
 package com.orgtype.org.dto
 
 data class OrgChartNode(
+    val id: Long? = null,
     val name: String,
     val role: String,
     val imageUrl: String? = null,

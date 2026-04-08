@@ -10,4 +10,8 @@ interface EmployeeRepository : JpaRepository<Employee, Long> {
     fun findAllByOrderByLevelDesc(): List<Employee>
     fun findByManagerId(managerId: Long): List<Employee>
     fun findByManagerIdIsNull(): List<Employee>
+    fun findByHiddenFalseOrderByLevelAsc(): List<Employee>
+    fun findByHiddenFalseOrderByLevelDesc(): List<Employee>
+    fun findByHiddenFalse(): List<Employee>
+    fun findByRole(role: String): List<Employee>
 }

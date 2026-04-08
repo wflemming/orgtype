@@ -1,0 +1,29 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'org-service'
+    metrics_path: '/management/prometheus'
+    static_configs:
+      - targets: ['org-service:8081']
+        labels:
+          service: 'org-service'
+
+  - job_name: 'game-service'
+    metrics_path: '/management/prometheus'
+    static_configs:
+      - targets: ['game-service:8082']
+        labels:
+          service: 'game-service'
+
+  - job_name: 'gateway'
+    metrics_path: '/management/prometheus'
+    static_configs:
+      - targets: ['gateway:8080']
+        labels:
+          service: 'gateway'
+
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
