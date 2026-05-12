@@ -25,10 +25,10 @@ data class Employee(
     @Column(name = "manager_id")
     val managerId: Long? = null,
 
-    @Column(name = "image_url")
+    @Column(name = "image_url", length = 2048)
     val imageUrl: String? = null,
 
-    @Column(name = "linkedin_url")
+    @Column(name = "linkedin_url", length = 2048)
     val linkedinUrl: String? = null,
 
     @Column(name = "role_alias")

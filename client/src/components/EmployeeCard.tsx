@@ -82,7 +82,7 @@ export function EmployeeCard({ employee, isRevealed, onEmployeeUpdated, onFlag }
   }
 
   return (
-    <div className="relative w-72 h-96" style={{ perspective: '1000px' }}>
+    <div className={`relative w-72 ${isEditing ? 'min-h-96' : 'h-96'}`} style={{ perspective: '1000px' }}>
       <AnimatePresence mode="wait">
         {!isRevealed ? (
           <motion.div
@@ -133,7 +133,7 @@ export function EmployeeCard({ employee, isRevealed, onEmployeeUpdated, onFlag }
             initial={{ rotateY: -90 }}
             animate={{ rotateY: 0 }}
             transition={{ duration: 0.4, ease: 'easeInOut' }}
-            className="absolute inset-0 bg-sofi-purple rounded-2xl shadow-lg flex flex-col items-center justify-center p-6 text-white backface-hidden"
+            className={`absolute inset-x-0 top-0 ${isEditing ? 'relative' : 'bottom-0'} bg-sofi-purple rounded-2xl shadow-lg flex flex-col items-center justify-center p-6 text-white backface-hidden`}
           >
             {!isEditing ? (
               <>

@@ -24,6 +24,10 @@ export function NameInput({
 }: Props) {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
+      // Don't intercept keys when user is typing in an input/textarea
+      const tag = (e.target as HTMLElement)?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return
+
       if (e.key === 'Enter' && (isRevealed || isTimeout)) {
         isTimeout ? onRetry() : onNext()
         return
@@ -33,7 +37,7 @@ export function NameInput({
         onNext()
         return
       }
-      if (e.key.length === 1 && /[a-zA-Z]/.test(e.key) && !isRevealed && !isTimeout) {
+      if (e.key.length === 1 && /[a-zA-Z]/.test(e.key) && !e.metaKey && !e.ctrlKey && !e.altKey && !isRevealed && !isTimeout) {
         onKeyPress(e.key)
       }
     }

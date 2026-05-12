@@ -2,12 +2,15 @@
 
 ## Build & Run
 
-- **Always use Docker** for backend services. The local system only has JDK 8; the backend requires JDK 21.
-  - `docker compose up --build` to build and run everything
-  - `docker compose up --build org-service` to rebuild a single service
-  - Never run `gradle build` directly on the host machine — it will fail.
+- **Database**: `docker compose up db` — only Postgres runs in Docker
+- **Backend** (run locally, requires JDK 21):
+  - `cd org-service && ./gradlew bootRun`
+  - `cd game-service && ./gradlew bootRun`
+  - `cd gateway && ./gradlew bootRun`
+  - All services default to `localhost` — no env vars needed for local dev
 - **Frontend**: `cd client && npm run dev` (runs on localhost:5173, proxies API to gateway at :8080)
 - **Frontend type-check**: `cd client && npx tsc --noEmit`
+- **Full Docker** (CI/deploy only): `docker compose up --build`
 
 ## Architecture
 
